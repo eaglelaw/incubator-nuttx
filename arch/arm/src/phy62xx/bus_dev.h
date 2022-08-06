@@ -62,7 +62,7 @@ enum
 #elif defined ( __GNUC__ )
 #define M0_IRQ_BASE 16
 #endif
-typedef enum IRQn
+typedef enum
 {
     /* -------------------  Cortex-M0 Processor Exceptions Numbers  ------------------- */
     NonMaskableInt_IRQn           = -14+M0_IRQ_BASE,      /*  2 Non Maskable Interrupt */

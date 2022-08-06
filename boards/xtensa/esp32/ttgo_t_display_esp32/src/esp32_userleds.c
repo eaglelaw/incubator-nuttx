@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/lpc17xx_40xx/lpc17_40_pwm.h
+ * boards/xtensa/esp32/ttgo_t_display_esp32/src/esp32_userleds.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,82 +18,78 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_LPC17XX_40XX_LPC17_40_PWM_H
-#define __ARCH_ARM_SRC_LPC17XX_40XX_LPC17_40_PWM_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
 #include <nuttx/config.h>
-#include "hardware/lpc17_40_pwm.h"
-#include "hardware/lpc17_40_mcpwm.h"
+
+#include <stdint.h>
+#include <stdbool.h>
+#include <debug.h>
+
+#include <nuttx/board.h>
+#include <arch/board/board.h>
+
+#include "esp32_gpio.h"
+#include "ttgo_t_display_esp32.h"
 
 /****************************************************************************
- * Pre-processor Definitions
+ * Private Data
  ****************************************************************************/
 
-/* PLL0CLK = CCLK * CCLK divider */
+/* This array maps an LED number to GPIO pin configuration */
 
-#define LPC17_40_PWM_CLOCK (LPC17_40_CCLK * BOARD_CCLKCFG_DIVIDER)
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL1
-#  define LPC17_40_PWM1_CHANNEL1 1
-#else
-#define LPC17_40_PWM1_CHANNEL1 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL2
-#define LPC17_40_PWM1_CHANNEL2 1
-#else
-#define LPC17_40_PWM1_CHANNEL2 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL3
-#define LPC17_40_PWM1_CHANNEL3 1
-#else
-#define LPC17_40_PWM1_CHANNEL3 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL4
-#define LPC17_40_PWM1_CHANNEL4 1
-#else
-#define LPC17_40_PWM1_CHANNEL4 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL5
-#define LPC17_40_PWM1_CHANNEL5 1
-#else
-#define LPC17_40_PWM1_CHANNEL5 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL6
-#define LPC17_40_PWM1_CHANNEL6 1
-#else
-#define LPC17_40_PWM1_CHANNEL6 0
-#endif
-
-#define LPC17_40_PWM1_NCHANNELS (LPC17_40_PWM1_CHANNEL1 + \
-                                 LPC17_40_PWM1_CHANNEL2 + \
-                                 LPC17_40_PWM1_CHANNEL3 + \
-                                 LPC17_40_PWM1_CHANNEL4 + \
-                                 LPC17_40_PWM1_CHANNEL5 + \
-                                 LPC17_40_PWM1_CHANNEL6)
-
-#if CONFIG_PWM_NCHANNELS > LPC17_40_PWM1_NCHANNELS
-#  error "PWM subystem has more channels then physical channels enabled"
-#endif
+static const uint32_t g_ledcfg[BOARD_NLEDS] =
+{
+  GPIO_LED1,
+};
 
 /****************************************************************************
- * Public Types
+ * Public Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Data
+ * Name: board_userled_initialize
  ****************************************************************************/
+
+uint32_t board_userled_initialize(void)
+{
+  uint8_t i;
+
+  for (i = 0; i < BOARD_NLEDS; i++)
+    {
+      esp32_configgpio(g_ledcfg[i], OUTPUT);
+    }
+
+  return BOARD_NLEDS;
+}
 
 /****************************************************************************
- * Public Functions Prototypes
+ * Name: board_userled
  ****************************************************************************/
 
-#endif /* __ARCH_ARM_SRC_LPC17XX_40XX_LPC17_40_PWM_H */
+void board_userled(int led, bool ledon)
+{
+  if ((unsigned)led < BOARD_NLEDS)
+    {
+      esp32_gpiowrite(g_ledcfg[led], ledon);
+    }
+}
+
+/****************************************************************************
+ * Name: board_userled_all
+ ****************************************************************************/
+
+void board_userled_all(uint32_t ledset)
+{
+  uint8_t i;
+
+  /* Configure LED1-8 GPIOs for output */
+
+  for (i = 0; i < BOARD_NLEDS; i++)
+    {
+      esp32_gpiowrite(g_ledcfg[i], (ledset & (1 << i)) != 0);
+    }
+}
+

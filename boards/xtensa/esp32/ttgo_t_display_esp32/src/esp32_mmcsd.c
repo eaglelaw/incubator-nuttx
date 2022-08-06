@@ -1,5 +1,5 @@
 /****************************************************************************
- * arch/arm/src/lpc17xx_40xx/lpc17_40_pwm.h
+ * boards/xtensa/esp32/ttgo_t_display_esp32/src/esp32_mmcsd.c
  *
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,82 +18,67 @@
  *
  ****************************************************************************/
 
-#ifndef __ARCH_ARM_SRC_LPC17XX_40XX_LPC17_40_PWM_H
-#define __ARCH_ARM_SRC_LPC17XX_40XX_LPC17_40_PWM_H
-
 /****************************************************************************
  * Included Files
  ****************************************************************************/
 
+#include <debug.h>
 #include <nuttx/config.h>
-#include "hardware/lpc17_40_pwm.h"
-#include "hardware/lpc17_40_mcpwm.h"
+#include <nuttx/mmcsd.h>
+#include <nuttx/spi/spi.h>
+#include <pthread.h>
+#include <sched.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "esp32_spi.h"
+#include "ttgo_t_display_esp32.h"
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
 
-/* PLL0CLK = CCLK * CCLK divider */
-
-#define LPC17_40_PWM_CLOCK (LPC17_40_CCLK * BOARD_CCLKCFG_DIVIDER)
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL1
-#  define LPC17_40_PWM1_CHANNEL1 1
-#else
-#define LPC17_40_PWM1_CHANNEL1 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL2
-#define LPC17_40_PWM1_CHANNEL2 1
-#else
-#define LPC17_40_PWM1_CHANNEL2 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL3
-#define LPC17_40_PWM1_CHANNEL3 1
-#else
-#define LPC17_40_PWM1_CHANNEL3 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL4
-#define LPC17_40_PWM1_CHANNEL4 1
-#else
-#define LPC17_40_PWM1_CHANNEL4 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL5
-#define LPC17_40_PWM1_CHANNEL5 1
-#else
-#define LPC17_40_PWM1_CHANNEL5 0
-#endif
-
-#ifdef CONFIG_LPC17_40_PWM1_CHANNEL6
-#define LPC17_40_PWM1_CHANNEL6 1
-#else
-#define LPC17_40_PWM1_CHANNEL6 0
-#endif
-
-#define LPC17_40_PWM1_NCHANNELS (LPC17_40_PWM1_CHANNEL1 + \
-                                 LPC17_40_PWM1_CHANNEL2 + \
-                                 LPC17_40_PWM1_CHANNEL3 + \
-                                 LPC17_40_PWM1_CHANNEL4 + \
-                                 LPC17_40_PWM1_CHANNEL5 + \
-                                 LPC17_40_PWM1_CHANNEL6)
-
-#if CONFIG_PWM_NCHANNELS > LPC17_40_PWM1_NCHANNELS
-#  error "PWM subystem has more channels then physical channels enabled"
-#endif
-
 /****************************************************************************
- * Public Types
+ * Private Definitions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Data
+ * Private Functions
  ****************************************************************************/
 
 /****************************************************************************
- * Public Functions Prototypes
+ * Public Functions
  ****************************************************************************/
 
-#endif /* __ARCH_ARM_SRC_LPC17XX_40XX_LPC17_40_PWM_H */
+/****************************************************************************
+ * Name: esp32_mmcsd_initialize
+ *
+ * Description:
+ *   Initialize SPI-based SD card and card detect thread.
+ ****************************************************************************/
+
+int esp32_mmcsd_initialize(int minor)
+{
+  struct spi_dev_s *spi;
+  int rv;
+
+  mcinfo("INFO: Initializing mmcsd card\n");
+
+  spi = esp32_spibus_initialize(CONFIG_NSH_MMCSDSPIPORTNO);
+  if (spi == NULL)
+    {
+      mcerr("ERROR: Failed to initialize SPI port %d\n", 2);
+      return -ENODEV;
+    }
+
+  rv = mmcsd_spislotinitialize(minor, 0, spi);
+  if (rv < 0)
+    {
+      mcerr("ERROR: Failed to bind SPI port %d to SD slot %d\n",
+            2, 0);
+      return rv;
+    }
+
+  spiinfo("INFO: mmcsd card has been initialized successfully\n");
+  return OK;
+}
